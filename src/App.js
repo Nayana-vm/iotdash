@@ -7,6 +7,7 @@ const sensors = [
   { id: 3, name: "Pressure", unit: "hPa", min: 995, max: 1015 },
   { id: 4, name: "CO2 Level", unit: "ppm", min: 400, max: 800 },
   { id: 5, name: "Air Quality", unit: "AQI", min: 50, max: 200 },
+  { id: 6, name: "Oxygen Level", unit: "ppm", min: 400, max: 800 },
 ];
 
 function randomValue(min, max) {
@@ -20,97 +21,27 @@ function getSensorStatus(sensor, value) {
 }
 
 function SensorCard({ sensor }) {
+  const isWarning = sensor.status === "warning";
   return (
-    <article className={`sensor-card ${sensor.status === "warning" ? "sensor-card-warning" : "sensor-card-normal"}`}>
+    <article
+      className={`sensor-card ${isWarning ? "sensor-card-warning" : "sensor-card-normal"
+        }`}
+    >
       <h3 className="sensor-name">{sensor.name}</h3>
       <p className="sensor-value">{sensor.value.toFixed(1)}</p>
       <p className="sensor-unit">{sensor.unit}</p>
-      <span className={`sensor-chip ${sensor.status === "warning" ? "chip-warning" : "chip-normal"}`}>
-        {sensor.status === "warning" ? "WARNING" : "NORMAL"}
-function SensorCard({ sensor, isDarkMode }) {
-  const [value, setValue] = useState(randomValue(sensor.min, sensor.max));
-  const [status, setStatus] = useState("normal");
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const val = parseFloat(randomValue(sensor.min, sensor.max));
-      setValue(val.toFixed(1));
-      const mid = (sensor.min + sensor.max) / 2;
-      const range = (sensor.max - sensor.min) / 2;
-      setStatus(Math.abs(val - mid) > range * 0.7 ? "warning" : "normal");
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, [sensor]);
-
-  const bgColor =
-    status === "warning"
-      ? isDarkMode
-        ? "#704000"
-        : "#fff3cd"
-      : isDarkMode
-      ? "#1a3a1a"
-      : "#d4edda";
-
-  const textColor =
-    status === "warning"
-      ? isDarkMode
-        ? "#ffb800"
-        : "#856404"
-      : isDarkMode
-      ? "#4ade80"
-      : "#155724";
-
-  const cardTextColor = isDarkMode ? "#e0e0e0" : "#333";
-
-  return (
-    <div
-      style={{
-        background: bgColor,
-        border: `2px solid ${status === "warning" ? "#ffc107" : "#28a745"}`,
-        borderRadius: "12px",
-        padding: "20px",
-        textAlign: "center",
-        minWidth: "180px",
-        boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
-      }}
-    >
-      <h3 style={{ margin: "0 0 10px", color: cardTextColor }}>{sensor.name}</h3>
-
-      <p
-        style={{
-          fontSize: "2.5rem",
-          fontWeight: "bold",
-          margin: "0",
-          color: textColor,
-        }}
-      >
-        {value}
-      </p>
-
-      <p style={{ margin: "5px 0 0", color: isDarkMode ? "#b0b0b0" : "#666" }}>
-        {sensor.unit}
-      </p>
-
       <span
-        style={{
-          display: "inline-block",
-          marginTop: "10px",
-          padding: "3px 10px",
-          borderRadius: "20px",
-          fontSize: "0.8rem",
-          fontWeight: "bold",
-          background: status === "warning" ? "#ffc107" : "#28a745",
-          color: "white",
-        }}
+        className={`sensor-chip ${isWarning ? "chip-warning" : "chip-normal"
+          }`}
       >
-        {status === "warning" ? "⚠ Warning" : "✓ Normal"}
+        {isWarning ? "⚠ WARNING" : "✓ NORMAL"}
       </span>
     </article>
   );
 }
 
 export default function App() {
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [time, setTime] = useState(new Date().toLocaleTimeString());
   const [sensorReadings, setSensorReadings] = useState(() =>
     sensors.map((sensor) => {
@@ -123,9 +54,27 @@ export default function App() {
     })
   );
 
-  const warningSensors = sensorReadings.filter((sensor) => sensor.status === "warning");
+  const warningSensors = sensorReadings.filter(
+    (sensor) => sensor.status === "warning"
+  );
   const hasWarning = warningSensors.length > 0;
-  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Extract individual sensor values easily
+  const getVal = (name) =>
+    sensorReadings.find((s) => s.name.toLowerCase() === name.toLowerCase())
+      ?.value || 0;
+
+  const temp = getVal("Temperature");
+  const humidity = getVal("Humidity");
+  const co2 = getVal("CO2 Level");
+  const aqi = getVal("Air Quality");
+  const oxygen = getVal("Oxygen Level");
+
+  // Advisory logic
+  const isRainy = humidity > 65 || (humidity > 60 && temp < 24);
+  const shouldWearMask = aqi > 120 || co2 > 650 || oxygen < 500;
+  const isSuitable =
+    aqi <= 130 && co2 <= 700 && oxygen >= 500 && temp >= 18 && temp <= 34;
 
   useEffect(() => {
     const t = setInterval(() => setTime(new Date().toLocaleTimeString()), 1000);
@@ -144,134 +93,127 @@ export default function App() {
           };
         })
       );
-    }, 2000);
+    }, 20000);
 
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <main className="dashboard">
+    <main className={`dashboard ${isDarkMode ? "dark-theme" : "light-theme"}`}>
       <section className="dashboard-shell">
+        {/* Header */}
         <header className="dashboard-header">
           <div>
-            <h1 className="dashboard-title">IoT Sensor Dashboard</h1>
+            <h1 className="dashboard-title">🌐 IoT Sensor Dashboard</h1>
             <p className="dashboard-subtitle">
               KSIT — DevOps Workshop 2026
             </p>
           </div>
-          <div className="dashboard-clock">
-            <p className="clock-time">{time}</p>
-            <p className="clock-hint">
-              Live Updates Every 2s
-            </p>
-  const bgColor = isDarkMode ? "#1a1a1a" : "#f0f2f5";
-  const headerColor = isDarkMode ? "#0f172a" : "#2c3e50";
-  const footerBgColor = isDarkMode ? "#2d2d2d" : "white";
-  const footerTextColor = isDarkMode ? "#b0b0b0" : "#666";
 
-  return (
-    <div
-      style={{
-        fontFamily: "Arial, sans-serif",
-        background: bgColor,
-        minHeight: "100vh",
-        padding: "30px",
-        transition: "background 0.3s",
-      }}
-    >
-      <div style={{ maxWidth: "900px", margin: "0 auto" }}>
-        <div
-          style={{
-            background: headerColor,
-            color: "white",
-            padding: "20px 30px",
-            borderRadius: "12px",
-            marginBottom: "30px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            transition: "background 0.3s",
-          }}
-        >
-          <div>
-            <h1 style={{ margin: 0, fontSize: "1.8rem" }}>
-              🌐 IoT Sensor Dashboard - Amulya H
-            </h1>
-            <p style={{ margin: "5px 0 0", opacity: 0.7 }}>
-              KSIT — DevOps Workshop 2026
-            </p>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+          <div className="header-controls">
             <button
+              className="theme-toggle-btn"
               onClick={() => setIsDarkMode(!isDarkMode)}
-              style={{
-                padding: "8px 16px",
-                borderRadius: "20px",
-                border: "2px solid white",
-                background: isDarkMode ? "#333" : "white",
-                color: isDarkMode ? "white" : "#333",
-                fontSize: "1rem",
-                cursor: "pointer",
-                fontWeight: "bold",
-                transition: "all 0.3s",
-              }}
+              title="Toggle Day/Night Mode"
             >
-              {isDarkMode ? "☀️ Light" : "🌙 Dark"}
+              {isDarkMode ? " Night Mode" : " Day Mode"}
             </button>
 
-            <div style={{ textAlign: "right" }}>
-              <p style={{ margin: 0, fontSize: "1.2rem" }}>🕐 {time}</p>
-              <p style={{ margin: "5px 0 0", opacity: 0.7, fontSize: "0.85rem" }}>
-                Live Updates Every 2s
-              </p>
+            <div className="dashboard-clock">
+              <p className="clock-time"> {time}</p>
+              <p className="clock-hint">Live Updates Every 20s</p>
             </div>
           </div>
         </header>
+
+        {/* Advisory Pop-up Bar */}
+        <div className="advisory-bar">
+          <div className={`advisory-popup ${isRainy ? "popup-rainy" : "popup-sunny"}`}>
+            <span className="popup-icon">{isRainy ? "" : ""}</span>
+            <div>
+              <strong>Weather Forecast:</strong>{" "}
+              {isRainy ? "Rainy / Damp Conditions Expected" : "Sunny & Clear Skies"}
+              <div className="popup-subtext">
+                Temp: {temp}°C | Humidity: {humidity}%
+              </div>
+            </div>
+          </div>
+
+          <div className={`advisory-popup ${shouldWearMask ? "popup-mask-yes" : "popup-mask-no"}`}>
+            <span className="popup-icon">{shouldWearMask ? "" : ""}</span>
+            <div>
+              <strong>Mask Advisory:</strong>{" "}
+              {shouldWearMask ? "Wear a Mask Outdoors" : "Air is Safe (No Mask Needed)"}
+              <div className="popup-subtext">
+                AQI: {aqi} | CO2: {co2} ppm | O2: {oxygen} ppm
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Warning Alert Banner */}
         {hasWarning && (
           <div className="warning-banner" role="alert" aria-live="assertive">
-            ALERT: Warning detected in {warningSensors.map((sensor) => sensor.name).join(", ")}
+            ALERT: Warning detected in{" "}
+            {warningSensors.map((sensor) => sensor.name).join(", ")}
           </div>
         )}
-        <div className="sensor-grid">
-          {sensorReadings.map((sensor) => (
-            <SensorCard key={sensor.id} sensor={sensor} />
-          ))}
+
+        {/* Content Layout Grid (Sensors + Side Panel) */}
+        <div className="dashboard-content">
+          <div className="sensor-grid">
+            {sensorReadings.map((sensor) => (
+              <SensorCard key={sensor.id} sensor={sensor} />
+            ))}
+          </div>
+
+          {/* Side Weather Suitability Pop-up Card */}
+          <aside
+            className={`suitability-card ${isSuitable ? "suitability-good" : "suitability-bad"
+              }`}
+          >
+            <div className="suitability-badge">
+              {isSuitable ? " SUITABLE" : " UNSUITABLE"}
+            </div>
+            <h3 className="suitability-title">Outdoor Weather Condition</h3>
+            <p className="suitability-desc">
+              {isSuitable
+                ? "Weather and environmental conditions are ideal for outdoor activities, walking, or exercise."
+                : "Weather or air quality is currently unfavourable for prolonged outdoor exposure."}
+            </p>
+            <div className="suitability-checklist">
+              <div className="check-item">
+                <span>Air Quality (AQI):</span>
+                <strong>{aqi <= 120 ? "Good" : "Poor"} ({aqi})</strong>
+              </div>
+              <div className="check-item">
+                <span>Temperature:</span>
+                <strong>{temp}°C</strong>
+              </div>
+              <div className="check-item">
+                <span>Oxygen Level:</span>
+                <strong>{oxygen >= 500 ? "Normal" : "Low"} ({oxygen} ppm)</strong>
+              </div>
+              <div className="check-item">
+                <span>CO2 Level:</span>
+                <strong>{co2 <= 650 ? "Optimal" : "Elevated"} ({co2} ppm)</strong>
+              </div>
+            </div>
+            <div className="suitability-footer">
+              💡 {isSuitable ? "Enjoy your day outside!" : "Consider staying indoors or wearing a mask."}
+            </div>
+          </aside>
         </div>
+
+        {/* Footer */}
         <footer className="dashboard-footer">
           <p>
-
-        <div
-          style={{
-            display: "flex",
-            gap: "20px",
-            flexWrap: "wrap",
-            justifyContent: "center",
-          }}
-        >
-          {sensors.map((s) => (
-            <SensorCard key={s.id} sensor={s} isDarkMode={isDarkMode} />
-          ))}
-        </div>
-
-        <div
-          style={{
-            marginTop: "30px",
-            background: footerBgColor,
-            padding: "20px",
-            borderRadius: "12px",
-            textAlign: "center",
-            color: footerTextColor,
-            transition: "all 0.3s",
-          }}
-        >
-          <p style={{ margin: 0 }}>
-            📦 Containerized with Docker &nbsp;|&nbsp;
-            ⚙️ CI/CD via Jenkins &nbsp;|&nbsp;
-            ☸️ Deployed on Kubernetes
+            📦 Containerized with Docker &nbsp;|&nbsp; ⚙️ CI/CD via Jenkins
+            &nbsp;|&nbsp; ☸️ Deployed on Kubernetes
           </p>
         </footer>
       </section>
     </main>
   );
 }
+
